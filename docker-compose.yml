@@ -1,0 +1,7 @@
+services:
+  api:
+    build: .
+    container_name: mrt-caller
+    restart: always
+    ports:
+      - "8700:8700"

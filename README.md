@@ -1,31 +1,19 @@
 # mrt-caller
 
-MRT Blue Line arrival notifier — returns next train times as plain text, designed for iPhone geofence automation via Apple Shortcuts.
+MRT Blue Line arrival notifier — returns next train times as plain text, designed for iPhone automation via Apple Shortcuts.
 
-- **v1** (Tha Phra station, 3 platforms): `/` and `/v1`
-- **v2** (any of the 38 Blue Line stations, 2 directions): `/v2`
-
-## Station Layout
+## API
 
 ```
-MRT ท่าพระ (BL01)
-
-  ชั้น 2
-  ├── ชานชาลา 1  →  หลักสอง (BL38) ตรง               05:43 – 00:18
-  └── ชานชาลา 2  →  ท่าพระ (BL01)  ผ่านบางซื่อ        05:43 – 23:19
-
-  ชั้น 3
-  └── ชานชาลา 3-4 → หลักสอง (BL38) ผ่านบางซื่อ        05:43 – 00:18
-
-  (เสาร์-อาทิตย์/วันหยุด: ขบวนแรก 05:59)
+GET /health                                                               → health check (no auth)
+GET /v2/next-train?mrt_depart_station=BL22                               → both directions
+GET /v2/next-train?mrt_depart_station=BL22&mrt_destination=lak_song      → หลักสอง only
+GET /v2/next-train?mrt_depart_station=BL22&mrt_destination=lak_song      → ท่าพระ only
 ```
 
-## v2 API (all 38 stations)
-
+Auth: all endpoints except `/health` require:
 ```
-GET /v2/next-train?mrt_depart_station=BL22                  → both directions
-GET /v2/next-train?mrt_depart_station=BL22&mrt_destination=lak_song  → หลักสอง
-GET /v2/next-train?mrt_depart_station=BL22&mrt_destination=tha_phra  → ท่าพระ (loop)
+X-API-Key: <MRT_API_KEY>
 ```
 
 ### Query Params
@@ -49,65 +37,12 @@ GET /v2/next-train?mrt_depart_station=BL22&mrt_destination=tha_phra  → ท่�
 🕐 อีก 6 นาที  วันธรรมดา Peak  ทุก 7 นาที
 ```
 
-Stations with no service in a direction (e.g. BL38 → หลักสอง, the terminus) return:
+Terminus stations with no service in a direction return:
 
 ```
 🚇 หลักสอง (BL38) → หลักสอง
 ⛔ ไม่มีบริการในทิศทางนี้
 ```
-
-## v1 API (Tha Phra platforms)
-
-```
-GET /health                                  → health check (also at /v1/health)
-GET /next-train                              → ทั้ง 3 ชานชาลา (also at /v1/next-train)
-GET /next-train?mrt_destination=platform_1  → ชั้น 2 → หลักสอง ตรง
-GET /next-train?mrt_destination=platform_2  → ชั้น 2 → ท่าพระ ผ่านบางซื่อ
-GET /next-train?mrt_destination=platform_34 → ชั้น 3 → หลักสอง ผ่านบางซื่อ
-```
-
-### Query Params
-
-| Param | Default | Values | Description |
-|---|---|---|---|
-| `mrt_destination` | *(all)* | `platform_1` `platform_2` `platform_34` | Omit to show all platforms |
-| `gap` | `5` | `4`–`10` | Train headway in minutes (5 or 6 — to be locked after real-world observation) |
-| `count` | `3` | `1`–`5` | Number of upcoming trains to show |
-
-### Example Response
-
-```
-🚇 ชานชาลา 1 (ชั้น 2) → หลักสอง
-⏱ 17:13  17:18  17:23
-🕐 อีก 4 นาที
-
-🚇 ชานชาลา 2 (ชั้น 2) → ท่าพระ ผ่านบางซื่อ
-⏱ 17:13  17:18  17:23
-🕐 อีก 4 นาที
-
-🚇 ชานชาลา 3-4 (ชั้น 3) → หลักสอง ผ่านบางซื่อ
-⏱ 17:13  17:18  17:23
-🕐 อีก 4 นาที
-
-วันธรรมดา  ทุก 5 นาที
-```
-
-## iPhone Shortcuts Setup
-
-1. **Shortcuts** app → **+** → name: `MRT ท่าพระ`
-2. Add action: **Get Contents of URL**
-   - URL: `https://mrt-caller.thepbordin.tech/next-train?gap=5`
-   - Method: `GET`
-   - Headers:
-     - `CF-Access-Client-Id`: *(your service token)*
-     - `CF-Access-Client-Secret`: *(your service token secret)*
-3. Add action: **Show Notification**
-   - Title: `🚇 MRT ท่าพระ`
-   - Body: **Contents of URL**
-4. **Automation** tab → **+** → **Personal Automation** → **Arrive**
-   - Location: MRT ท่าพระ (13.7278° N, 100.4773° E) · radius 100 m
-   - Action: **Run Shortcut** → `MRT ท่าพระ`
-   - Disable **Ask Before Running**
 
 ## Run
 
@@ -120,15 +55,12 @@ docker compose up --detach --build
 
 # Logs
 docker compose logs -f
-
-# Test locally
-curl "http://localhost:8700/next-train?gap=5"
 ```
 
 ## Test
 
 ```bash
-uv run pytest -v   # 45 tests
+uv run pytest -v
 ```
 
 ## Stack
